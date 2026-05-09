@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useUser } from '../context/UserContext';
 
 const Profile = () => {
   const { userProfile, updateUserProfile } = useUser();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(userProfile || {
     name: '',
     age: '',
     weight: '',
@@ -11,12 +11,6 @@ const Profile = () => {
     goal: 'Stay Fit',
     experience: 'Beginner'
   });
-
-  useEffect(() => {
-    if (userProfile) {
-      setFormData(userProfile);
-    }
-  }, [userProfile]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

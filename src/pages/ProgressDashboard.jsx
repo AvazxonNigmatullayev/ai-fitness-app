@@ -1,49 +1,49 @@
 import { useUser } from '../context/UserContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 
 const ProgressDashboard = () => {
   const { workoutLogs, userProfile } = useUser();
-  const [streak, setStreak] = useState(0);
 
-  // Calculate weekly data
-  const getWeeklyData = () => {
-    const last7Days = [...Array(7)].map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
-    }).reverse();
+  const streak = useMemo(() => {
+    if (workoutLogs.length === 0) return 0;
 
-    const logsByDate = workoutLogs.reduce((acc, log) => {
-      const date = log.date.split('T')[0];
-      acc[date] = (acc[date] || 0) + 1;
-      return acc;
-    }, {});
-
-    return last7Days.map(date => ({
-      name: date.substring(5),
-      workouts: logsByDate[date] || 0
-    }));
-  };
-
-  // Calculate current streak
-  useEffect(() => {
-    if (workoutLogs.length === 0) return;
-    
     const dates = [...new Set(workoutLogs.map(log => log.date.split('T')[0]))].sort();
     let currentStreak = 1;
-    let today = new Date().toISOString().split('T')[0];
-    
+
     for (let i = dates.length - 1; i > 0; i--) {
-      const diff = (new Date(dates[i]) - new Date(dates[i-1])) / (1000 * 3600 * 24);
+      const diff = (new Date(dates[i]) - new Date(dates[i - 1])) / (1000 * 3600 * 24);
       if (diff === 1) currentStreak++;
       else break;
     }
-    setStreak(currentStreak);
+
+    return currentStreak;
   }, [workoutLogs]);
 
   const totalWorkouts = workoutLogs.length;
-  const weeklyData = getWeeklyData();
+  const weeklyData = useMemo(() => {
+    const today = new Date();
+    const last7Days = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() - (6 - index));
+      return date.toISOString().split('T')[0];
+    });
+
+    const counts = last7Days.reduce((acc, date) => {
+      acc[date] = 0;
+      return acc;
+    }, {});
+
+    workoutLogs.forEach((log) => {
+      const date = log.date.split('T')[0];
+      if (counts[date] !== undefined) counts[date] += 1;
+    });
+
+    return last7Days.map((date) => ({
+      name: new Date(date).toLocaleDateString(undefined, { weekday: 'short' }),
+      workouts: counts[date],
+    }));
+  }, [workoutLogs]);
 
   return (
     <div>
